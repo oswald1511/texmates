@@ -1,20 +1,26 @@
 {
-  "name": "servidor",
+  "name": "texmates-servidor",
   "version": "1.0.0",
+  "description": "Servidor WebSocket para sincronización colaborativa de documentos LaTeX (Automerge)",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "tsx src/index.ts",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "automerge",
+    "collaborative",
+    "latex",
+    "websocket"
+  ],
+  "author": "Proyecto Universidad FIUBA",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "@automerge/automerge-repo": "^2.6.0-alpha.3",
-    "@automerge/automerge-repo-network-websocket": "^2.6.0-alpha.3",
-    "@automerge/automerge-repo-storage-nodefs": "^2.6.0-alpha.3",
+    "@automerge/automerge-repo": "^1.0.19",
+    "@automerge/automerge-repo-network-websocket": "^1.0.19",
+    "@automerge/automerge-repo-storage-nodefs": "^1.0.19",
     "ws": "^8.23.0"
   },
   "devDependencies": {

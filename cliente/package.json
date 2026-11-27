@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@automerge/automerge-codemirror": "^0.2.0",
-    "@automerge/automerge-repo": "^2.6.0-alpha.3",
-    "@automerge/automerge-repo-network-websocket": "^2.6.0-alpha.3",
+    "@automerge/automerge-repo": "^1.0.19",
+    "@automerge/automerge-repo-network-websocket": "^1.0.19",
     "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/basic-setup": "^0.20.0",
     "@codemirror/commands": "^6.11.2",

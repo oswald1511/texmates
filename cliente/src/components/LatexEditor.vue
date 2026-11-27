@@ -1,66 +1,117 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { EditorView, basicSetup } from '@codemirror/view'
-import { keymap } from '@codemirror/view'
-import { indentWithTab } from '@codemirror/commands'
+import { EditorView, basicSetup } from 'codemirror'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { Repo, type DocHandle } from '@automerge/automerge-repo'
+import { indentWithTab } from '@codemirror/commands'
+import { EditorState } from '@codemirror/state'
+import { Repo, type DocHandle as RepoDocHandle } from '@automerge/automerge-repo'
+import { BrowserWebSocketClientAdapter } from '@automerge/automerge-repo-network-websocket'
+import { automergeSyncPlugin } from '@automerge/automerge-codemirror'
+import type { DocHandle } from '@automerge/automerge-codemirror'
+
+// Tipo para el documento
+type DocData = {
+  text: string
+}
 
 // Estado del componente
 const editor = ref<HTMLDivElement>(null)
 const view = ref<EditorView | null>(null)
+const docId = ref<string>('')
+
 let repo: Repo | null = null
-let docHandle: DocHandle<{ text: string }> | null = null
+let docHandle: RepoDocHandle<DocData> | null = null
+
+// Función para convertir un DocHandle de automerge-repo 1.0 al formato que espera el plugin
+function makeHandle<T>(h: RepoDocHandle<T>): DocHandle<T> {
+  return Object.assign({}, h, {
+    doc: () => h.docSync(),
+  }) as DocHandle<T>
+}
 
 // Obtener el docId de la URL
 function getDocIdFromUrl(): string {
   const path = window.location.pathname
-  // Ejemplo: /doc/abc123
   const match = path.match(/\/doc\/(.+)/)
   return match ? match[1] : ''
 }
 
+// Crear un estado inicial del editor
+function createInitialState(text: string): EditorState {
+  return EditorState.create({
+    doc: text,
+    extensions: [
+      basicSetup,
+      oneDark,
+      indentWithTab,
+    ]
+  })
+}
+
 // Inicializar el editor
 async function initEditor() {
-  const docId = getDocIdFromUrl()
-  if (!docId) {
+  const id = getDocIdFromUrl()
+  console.log('docId:', id)
+  
+  if (!id) {
     console.error('No docId found in URL')
     return
   }
+  
+  docId.value = id
 
-  console.log('Inicializando editor para:', docId)
+  // Crear el repositorio con WebSocket network adapter
+  console.log('Creando Repo con WebSocket...')
+  
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}:3001`
+  console.log('WebSocket URL:', wsUrl)
+  
+  repo = new Repo({
+    network: [
+      new BrowserWebSocketClientAdapter(wsUrl)
+    ]
+  })
 
-  // Crear el repositorio (sin WebSocket por ahora - solo local)
-  repo = new Repo()
+  // Buscar el documento existente
+  try {
+    docHandle = await repo.find<DocData>(id)
+    console.log('Documento encontrado:', docHandle.docSync()?.text)
+  } catch (e) {
+    // Si no existe, creamos uno nuevo con un ID generado
+    docHandle = repo.create<DocData>({ text: '# ' + id + '\n\\documentclass{article}\n\\begin{document}\nHello World\n\\end{document}' })
+    console.log('Documento creado con nuevo ID:', docHandle.url)
+  }
 
-  // Obtener o crear el documento
-  docHandle = await repo.getOrCreate(docId, () => ({
-    text: 'Hello World!'
-  }))
+  // Convertir el handle al formato que espera el plugin
+  const codemirrorHandle = makeHandle(docHandle)
 
-  // Obtener el texto del documento
-  const doc = docHandle.doc()
-  console.log('Documento cargado:', doc.text)
+  // Crear el estado inicial del editor
+  const state = createInitialState(docHandle.docSync().text)
 
-  // Crear el editor de CodeMirror
   const newView = new EditorView({
-    state: EditorState.create({
-      doc: doc.text,
-      extensions: [
-        basicSetup,
-        oneDark,
-        keymap.of([indentWithTab]),
-      ]
-    }),
-    parent: editor.value!
+    state,
+    parent: editor.value!,
+    extensions: [
+      automergeSyncPlugin({
+        handle: codemirrorHandle,
+        path: [],
+      }),
+    ],
   })
 
   view.value = newView
 
-  // Log cuando el documento cambia
-  docHandle.on('changes', () => {
+  // Sincronizar el documento con el editor (cuando cambia el documento, actualizar el editor)
+  docHandle!.on('change', (payload) => {
     console.log('Documento actualizado')
-    console.log('Nuevo texto:', docHandle.doc().text)
+    const newText = payload.doc.text
+    // Actualizar el editor
+    if (view.value) {
+      view.value.dispatch({
+        changes: { from: 0, to: view.value.state.doc.length, insert: newText }
+      })
+    }
   })
 }
 
@@ -75,7 +126,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="editor" class="editor-container"></div>
+  <div ref="editor" class="editor-container">
+    <div style="position: absolute; top: 10px; left: 10px; color: yellow; z-index: 100;">
+      Documento: {{ docId }}
+    </div>
+  </div>
 </template>
 
 <style scoped>
