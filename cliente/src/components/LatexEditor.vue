@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
 import { keymap } from '@codemirror/view'
-import { defaultTabBinding } from '@codemirror/commands'
+import { indentWithTab } from '@codemirror/commands'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { automergeSyncPlugin } from '@automerge/automerge-codemirror'
 import { Repo, type DocHandle } from '@automerge/automerge-repo'
@@ -62,7 +62,7 @@ async function initEditor() {
     extensions: [
       basicSetup,
       oneDark,
-      keymap.of([defaultTabBinding]),
+      keymap.of([indentWithTab]),
       // Plugin de sincronización Automerge
       automergeSyncPlugin({
         handle: docHandle,
