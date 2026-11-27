@@ -6,7 +6,7 @@ import { defaultTabBinding } from '@codemirror/commands'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { automergeSyncPlugin } from '@automerge/automerge-codemirror'
 import { Repo, type DocHandle } from '@automerge/automerge-repo'
-import { WebSocketClient } from '@automerge/automerge-repo-network-websocket'
+import { WebSocketClientAdapter } from '@automerge/automerge-repo-network-websocket'
 
 // Estado del componente
 const editor = ref<HTMLDivElement>(null)
@@ -38,10 +38,17 @@ async function initEditor() {
     return
   }
 
-  // Crear el repositorio con almacenamiento en memoria (usa 'id' como clave)
+  // Construir la URL del servidor WebSocket
+  const wsUrl = getServerUrl()
+  console.log('Conectando a:', wsUrl)
+
+  // Crear el repositorio con el WebSocket como network
+  // El Repo manejará la sincronización automáticamente
   repo = new Repo({
-    // Para el cliente, el almacenamiento se maneja con el servidor WebSocket
-    // No configuramos storage aquí porque el servidor maneja todo
+    // Conectarnos al servidor WebSocket
+    network: [
+      new WebSocketClientAdapter(wsUrl)
+    ]
   })
 
   // Obtener o crear el documento
@@ -66,6 +73,11 @@ async function initEditor() {
   })
 
   view.value = newView
+
+  // Log cuando el documento cambia
+  docHandle.on('changes', () => {
+    console.log('Documento actualizado')
+  })
 }
 
 // Limpiar al desmontar
