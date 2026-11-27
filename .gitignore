@@ -1,16 +1,21 @@
 # Librerías instaladas (se regeneran con npm install)
 node_modules/
 
-# Archivos generados al armar la página
-dist/
+# Archivos generados del cliente
+cliente/dist/
 
-# Datos de los proyectos de los usuarios (no se suben)
+# Archivos generados del servidor
+servidor/dist/
+servidor/automerge-repo-data/
+
+# Datos de usuarios (no se suben)
 automerge-repo-data/
 datos/
 
 # Variables privadas (claves y configuraciones)
 .env
 .env.local
+*.env*
 
 # Registros y archivos del sistema
 *.log
