@@ -1,0 +1,17 @@
+# Librerías instaladas (se regeneran con npm install)
+node_modules/
+
+# Archivos generados al armar la página
+dist/
+
+# Datos de los proyectos de los usuarios (no se suben)
+automerge-repo-data/
+datos/
+
+# Variables privadas (claves y configuraciones)
+.env
+.env.local
+
+# Registros y archivos del sistema
+*.log
+Thumbs.db
