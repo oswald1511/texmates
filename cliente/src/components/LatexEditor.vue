@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { EditorView, basicSetup } from 'codemirror'
+import { EditorView, basicSetup } from '@codemirror/view'
 import { keymap } from '@codemirror/view'
 import { indentWithTab } from '@codemirror/commands'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { automergeSyncPlugin } from '@automerge/automerge-codemirror'
 import { Repo, type DocHandle } from '@automerge/automerge-repo'
-import { WebSocketClientAdapter } from '@automerge/automerge-repo-network-websocket'
 
 // Estado del componente
 const editor = ref<HTMLDivElement>(null)
@@ -22,14 +20,6 @@ function getDocIdFromUrl(): string {
   return match ? match[1] : ''
 }
 
-// Construir la URL del servidor WebSocket
-// Usa wss:// si la página está en https, sino ws://
-function getServerUrl(): string {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = window.location.host
-  return `${protocol}//${host}:3001`
-}
-
 // Inicializar el editor
 async function initEditor() {
   const docId = getDocIdFromUrl()
@@ -38,37 +28,30 @@ async function initEditor() {
     return
   }
 
-  // Construir la URL del servidor WebSocket
-  const wsUrl = getServerUrl()
-  console.log('Conectando a:', wsUrl)
+  console.log('Inicializando editor para:', docId)
 
-  // Crear el repositorio con el WebSocket como network
-  // El Repo manejará la sincronización automáticamente
-  repo = new Repo({
-    // Conectarnos al servidor WebSocket
-    network: [
-      new WebSocketClientAdapter(wsUrl)
-    ]
-  })
+  // Crear el repositorio (sin WebSocket por ahora - solo local)
+  repo = new Repo()
 
   // Obtener o crear el documento
   docHandle = await repo.getOrCreate(docId, () => ({
-    text: ''
+    text: 'Hello World!'
   }))
+
+  // Obtener el texto del documento
+  const doc = docHandle.doc()
+  console.log('Documento cargado:', doc.text)
 
   // Crear el editor de CodeMirror
   const newView = new EditorView({
-    doc: docHandle.doc().text,
-    extensions: [
-      basicSetup,
-      oneDark,
-      keymap.of([indentWithTab]),
-      // Plugin de sincronización Automerge
-      automergeSyncPlugin({
-        handle: docHandle,
-        path: ['text'],
-      }),
-    ],
+    state: EditorState.create({
+      doc: doc.text,
+      extensions: [
+        basicSetup,
+        oneDark,
+        keymap.of([indentWithTab]),
+      ]
+    }),
     parent: editor.value!
   })
 
@@ -77,6 +60,7 @@ async function initEditor() {
   // Log cuando el documento cambia
   docHandle.on('changes', () => {
     console.log('Documento actualizado')
+    console.log('Nuevo texto:', docHandle.doc().text)
   })
 }
 
